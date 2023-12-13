@@ -16,6 +16,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 	private final UserRepository userRepository;
+	private final PostServiceClient postServiceClient;
 	private final RestTemplate postRestTemplate;
 
 	/**
@@ -23,10 +24,23 @@ public class UserServiceImpl implements UserService {
 	 *
 	 * @return A list of all stored users.
 	 */
-	@Override
+	/*@Override
 	public List<User> get() {
 		return userRepository.findAll();
+	}*/
+	@Override
+	public List<User> get() {
+		List<User> users = userRepository.findAll();
+
+		// Fetch post details using WebClient for each user
+		users.forEach(user -> {
+			postServiceClient.getPostDetails(user.getPostId())
+					.subscribe(post -> user.setPost(post)); // Assuming a setter for post in User model
+		});
+
+		return users;
 	}
+
 
 	/**
 	 * Retrieves a user based on the provided type and identifier.
@@ -35,9 +49,21 @@ public class UserServiceImpl implements UserService {
 	 * @param identifier The username or user ID based on the provided type.
 	 * @return The User object corresponding to the provided identifier or null if not found.
 	 */
-	@Override
+	/*@Override
 	public User get(String type, String identifier) {
 		return ("name".equals(type) ? userRepository.findByUsername(identifier) : userRepository.findById(identifier)).orElse(null);
+	}*/
+	@Override
+	public User get(String type, String identifier) {
+		User user = ("name".equals(type) ? userRepository.findByUsername(identifier) : userRepository.findById(identifier)).orElse(null);
+
+		if (user != null) {
+			// Fetch post details using WebClient
+			postServiceClient.getPostDetails(user.getPostId())
+					.subscribe(post -> user.setPost(post)); // Assuming a setter for post in User model
+		}
+
+		return user;
 	}
 
 	/**

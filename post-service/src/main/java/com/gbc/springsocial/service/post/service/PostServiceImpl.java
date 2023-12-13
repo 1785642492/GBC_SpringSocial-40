@@ -16,6 +16,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class PostServiceImpl implements PostService {
 	private final PostRepository postRepository;
+	private final UserServiceClient userServiceClient;
 	private final RestTemplate userRestTemplate;
 	private final RestTemplate commentRestTemplate;
 
@@ -28,6 +29,21 @@ public class PostServiceImpl implements PostService {
 	public List<Post> select() {
 		return postRepository.findAll().stream().peek(post -> {
 			try {
+				User user = userServiceClient.getUserDetails(post.getUserId()).block();
+				if (user != null) post.setAuthor(user.getUsername());
+			} catch (Exception ignore) {
+			}
+			try {
+				List<Comment> comments = Bridge.getCommentsByPostId(commentRestTemplate, post.getId());
+				if (comments != null) post.setComments(comments);
+			} catch (Exception ignore) {
+			}
+		}).toList();
+	}
+	/*@Override
+	public List<Post> select() {
+		return postRepository.findAll().stream().peek(post -> {
+			try {
 				User user = Bridge.getUserById(userRestTemplate, post.getUserId());
 				if (user != null) post.setAuthor(user.getUsername());
 			} catch (Exception ignore) { }
@@ -36,7 +52,7 @@ public class PostServiceImpl implements PostService {
 				if (comments != null) post.setComments(comments);
 			} catch (Exception ignore) { }
 		}).toList();
-	}
+	}*/
 
 	/**
 	 * Retrieves a list of Posts associated with a specific username.
@@ -45,6 +61,19 @@ public class PostServiceImpl implements PostService {
 	 * @return A list of Post objects associated with the given username, along with their authors and comments.
 	 */
 	@Override
+	public List<Post> select(String username) {
+		User user = userServiceClient.getUserByName(username);
+		if (user == null) throw new NotFoundException("user", username);
+		return postRepository.findAllByUserId(user.getId()).stream().peek(post -> {
+			post.setAuthor(user.getUsername());
+			try {
+				List<Comment> comments = Bridge.getCommentsByPostId(commentRestTemplate, post.getId());
+				if (comments != null) post.setComments(comments);
+			} catch (Exception ignore) {
+			}
+		}).toList();
+	}
+	/*@Override
 	public List<Post> select(String username) {
 		User user = Bridge.getUserByName(userRestTemplate, username);
 		if (user == null) throw new NotFoundException("user", username);
@@ -55,7 +84,7 @@ public class PostServiceImpl implements PostService {
 				if (comments != null) post.setComments(comments);
 			} catch (Exception ignore) { }
 		}).toList();
-	}
+	}*/
 
 	/**
 	 * Retrieves a Post based on the provided type and identifier.
@@ -65,6 +94,25 @@ public class PostServiceImpl implements PostService {
 	 * @return A Post object that matches the given criteria or null if no match is found.
 	 */
 	@Override
+	public Post select(String type, String identifier) {
+		Post post = ("slug".equals(type) ? postRepository.findBySlug(identifier) : postRepository.findById(identifier)).orElse(null);
+		if (post == null) throw new NotFoundException("post", identifier);
+
+		try {
+			User user = userServiceClient.getUserDetails(post.getUserId());
+			post.setAuthor(user.getUsername());
+		} catch (Exception ignore) {
+		}
+
+		try {
+			List<Comment> comments = Bridge.getCommentsByPostId(commentRestTemplate, post.getId());
+			if (comments != null) post.setComments(comments);
+		} catch (Exception ignore) {
+		}
+
+		return post;
+	}
+	/*@Override
 	public Post select(String type, String identifier) {
 		Post post = ("slug".equals(type) ? postRepository.findBySlug(identifier) : postRepository.findById(identifier)).orElse(null);
 		if (post == null) throw new NotFoundException("post", identifier);
@@ -80,7 +128,7 @@ public class PostServiceImpl implements PostService {
 		} catch (Exception ignore) { }
 
 		return post;
-	}
+	}*/
 
 	/**
 	 * Creates a new Post after validating necessary fields and ensuring uniqueness of slug.

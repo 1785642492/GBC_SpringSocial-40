@@ -21,6 +21,11 @@ public class PostServiceApplication {
 	private String commentServiceHost;
 
 	@Bean
+	public WebClient.Builder webClientBuilder() {
+		return WebClient.builder();
+	}
+
+	@Bean
 	public RestTemplateBuilder restTemplateBuilder() {
 		return new RestTemplateBuilder();
 	}

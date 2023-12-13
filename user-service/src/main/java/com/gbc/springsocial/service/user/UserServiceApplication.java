@@ -18,6 +18,11 @@ public class UserServiceApplication {
 	private String postServiceHOST;
 
 	@Bean
+	public WebClient.Builder webClientBuilder() {
+		return WebClient.builder();
+	}
+
+	@Bean
 	public RestTemplateBuilder restTemplateBuilder() {
 		return new RestTemplateBuilder();
 	}

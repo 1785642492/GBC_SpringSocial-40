@@ -1,6 +1,7 @@
 package com.gbc.springsocial.service.comment.controller;
 
 import com.gbc.springsocial.service.comment.service.CommentService;
+import com.gbc.springsocial.service.comment.service.UserServiceClient;
 import com.gbc.springsocial.shared.model.Comment;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -12,6 +13,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CommentController {
 	private final CommentService commentService;
+	private final UserServiceClient userServiceClient;
 
 	@GetMapping("/select")
 	List<Comment> select() {

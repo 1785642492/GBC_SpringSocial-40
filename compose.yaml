@@ -53,6 +53,49 @@ services:
     ports:
       - "3570:3570"
 
+  api-gateway:
+    image: api-gateway
+    ports:
+      - "8282:8282"
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: api-gateway/Dockerfile
+    env_file:
+      - service-variable.env
+    container_name: api-gateway
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://user-service:8761/eureka
+    depends_on:
+      - keycloak
+    networks:
+      - spring-social
+  zipkin:
+    image: openzipkin/zipkin:latest
+    restart: unless-stopped
+    ports:
+      - "9411:9411"
+    container_name: zipkin-spring-social
+    networks:
+      - spring-social
+  keycloak:
+    image: jboss/keycloak
+    ports:
+      - "8484:8484"
+    container_name: keycloak
+    environment:
+      JBOSS_LOG_MANAGER_ROOT_LOGGER: DEBUG
+      DB_DATABASE: keycloak
+      DB_PASSWORD: password
+      KEYCLOAK_USER: admin
+      KEYCLOAK_PASSWORD: password
+      KEYCLOAK_IMPORT: /opt/jboss/keycloak/realms/spring-boot-microservices-realm.json
+    volumes:
+      - ./realms/:/opt/jboss/keycloak/realms
+    restart: unless-stopped
+    networks:
+      - spring-social
   mongodb:
     image: mongo:latest
     ports:

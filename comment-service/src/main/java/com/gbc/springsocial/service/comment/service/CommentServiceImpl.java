@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
 
@@ -20,8 +21,8 @@ import java.util.List;
 public class CommentServiceImpl implements CommentService {
 	private final RestTemplate postRestTemplate;
 	private final RestTemplate userRestTemplate;
+	private final UserServiceClient userServiceClient;
 	private final CommentRepository commentRepository;
-
 
 
 	/**
@@ -44,7 +45,7 @@ public class CommentServiceImpl implements CommentService {
 	public List<Comment> select() {
 		return commentRepository.findAll().stream().peek(comment -> {
 			try {
-				User user = userClient.getUser("id", comment.getUserId());
+				User user = userServiceClient.getUserDetails(comment.getUserId()).block();
 				if (user != null) comment.setAuthor(user.getUsername());
 			} catch (Exception ignore) {
 				comment.setAuthor("unknown");

@@ -9,8 +9,10 @@ import com.gbc.springsocial.shared.model.Comment;
 import com.gbc.springsocial.shared.model.Post;
 import com.gbc.springsocial.shared.model.User;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
 
@@ -19,18 +21,31 @@ import java.util.List;
 public class CommentServiceImpl implements CommentService {
 	private final RestTemplate postRestTemplate;
 	private final RestTemplate userRestTemplate;
+	private final UserServiceClient userServiceClient;
 	private final CommentRepository commentRepository;
+
 
 	/**
 	 * Retrieves all the comments stored in the database.
 	 *
 	 * @return A list of all comments.
 	 */
-	@Override
+	/*@Override
 	public List<Comment> select() {
 		return commentRepository.findAll().stream().peek(comment -> {
 			try {
 				User user = Bridge.getUserById(userRestTemplate, comment.getUserId());
+				if (user != null) comment.setAuthor(user.getUsername());
+			} catch (Exception ignore) {
+				comment.setAuthor("unknown");
+			}
+		}).toList();
+	}*/
+	@Override
+	public List<Comment> select() {
+		return commentRepository.findAll().stream().peek(comment -> {
+			try {
+				User user = userServiceClient.getUserDetails(comment.getUserId()).block();
 				if (user != null) comment.setAuthor(user.getUsername());
 			} catch (Exception ignore) {
 				comment.setAuthor("unknown");

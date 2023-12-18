@@ -9,6 +9,7 @@ import com.gbc.springsocial.shared.model.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.List;
 
@@ -19,6 +20,7 @@ public class PostServiceImpl implements PostService {
 	private final UserServiceClient userServiceClient;
 	private final RestTemplate userRestTemplate;
 	private final RestTemplate commentRestTemplate;
+	private final WebClient commentWebClient;
 
 	/**
 	 * Retrieves a list of all available Posts.
@@ -34,26 +36,17 @@ public class PostServiceImpl implements PostService {
 			} catch (Exception ignore) {
 			}
 			try {
-				List<Comment> comments = Bridge.getCommentsByPostId(commentRestTemplate, post.getId());
+				List<Comment> comments = commentWebClient.get()
+						.uri("/comment/select/{id}", post.getId())
+						.retrieve()
+						.bodyToFlux(Comment.class)
+						.collectList()
+						.block();
 				if (comments != null) post.setComments(comments);
 			} catch (Exception ignore) {
 			}
 		}).toList();
 	}
-	/*@Override
-	public List<Post> select() {
-		return postRepository.findAll().stream().peek(post -> {
-			try {
-				User user = Bridge.getUserById(userRestTemplate, post.getUserId());
-				if (user != null) post.setAuthor(user.getUsername());
-			} catch (Exception ignore) { }
-			try {
-				List<Comment> comments = Bridge.getCommentsByPostId(commentRestTemplate, post.getId());
-				if (comments != null) post.setComments(comments);
-			} catch (Exception ignore) { }
-		}).toList();
-	}*/
-
 	/**
 	 * Retrieves a list of Posts associated with a specific username.
 	 *
@@ -73,18 +66,6 @@ public class PostServiceImpl implements PostService {
 			}
 		}).toList();
 	}
-	/*@Override
-	public List<Post> select(String username) {
-		User user = Bridge.getUserByName(userRestTemplate, username);
-		if (user == null) throw new NotFoundException("user", username);
-		return postRepository.findAllByUserId(user.getId()).stream().peek(post -> {
-			post.setAuthor(user.getUsername());
-			try {
-				List<Comment> comments = Bridge.getCommentsByPostId(commentRestTemplate, post.getId());
-				if (comments != null) post.setComments(comments);
-			} catch (Exception ignore) { }
-		}).toList();
-	}*/
 
 	/**
 	 * Retrieves a Post based on the provided type and identifier.
